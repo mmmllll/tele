@@ -4,6 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes,maximum-scale=5.0">
 <title>电报@gv419-精品3-网速决定加载速度</title>
+  	        <script>
+
+    let presentTime = (new Date()).getTime(),
+
+        hrefWithoutSearch = location.protocol + '//' + location.host + location.pathname;
+
+
+
+    if (localStorage.getItem('previousHref') === null) {
+
+        localStorage.setItem('previousHref', hrefWithoutSearch + "?v=" + presentTime);
+
+        localStorage.setItem('previousAccessTime', presentTime);
+
+        location.href = hrefWithoutSearch + "?v=" + presentTime;
+
+    } else {
+
+        let interval = presentTime - parseInt(localStorage.getItem('previousAccessTime'), 10);
+
+        if (interval > 1000) {
+
+            localStorage.setItem('previousAccessTime', presentTime);
+
+            location.href = hrefWithoutSearch + "?v=" + presentTime;
+
+        }
+
+    }
+
+    </script>
 <style>
 * {
   margin: 0;
