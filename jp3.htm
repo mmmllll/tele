@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes,maximum-scale=5.0">
+<title>电报@gv419-精品3-网速决定加载速度</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body {
+  background: #f5f5f5;
+  padding: 8px;
+  -webkit-touch-callout: none;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* 小图水印：紧凑集中在中间 */
+.watermark-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px; /* 水印间距 近一点 */
+}
+.wm {
+  font-size: 13px;
+  color: #000;
+  opacity: 0.18;
+  white-space: nowrap;
+}
+
+/* 放大弹窗 */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: none;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100vh;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* 大图水印：紧凑集中在中间 */
+.lightbox-wm {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px; /* 大图水印间距 */
+}
+.lw {
+  font-size: 34px;
+  color: #fff;
+  opacity: 0.15;
+  white-space: nowrap;
+}
+
+/* 按钮 */
+.btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  z-index: 10;
+}
+.prev { left: 10px; }
+.next { right: 10px; }
+.close {
+  top: 20px;
+  right: 20px;
+  transform: none;
+}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div class="gallery" id="gallery"></div>
+
+<div class="lightbox" id="lightbox">
+  <button class="btn close" id="closeBtn">×</button>
+  <button class="btn prev" id="prevBtn">←</button>
+  <button class="btn next" id="nextBtn">→</button>
+  <img class="lightbox-img" id="lightboxImg">
+  <div class="lightbox-wm">
+    <div class="lw"></div>
+    <div class="lw"></div>
+    <div class="lw"></div>
+  </div>
+</div>
+
+<script>
+// ================= 可修改配置 =================
+const WATERMARK = "电报@gv419";
+const OPACITY_SMALL = 0.18;
+const OPACITY_BIG = 0.15;
+
+// 图片链接（可放一万张）
+const imgUrls = [
+  "https://i.postimg.cc/SKHGZLhr/J200.jpg" ,
+"https://i.postimg.cc/Kv7sRW2y/J199.jpg" ,
+"https://i.postimg.cc/hvWpGLZj/J198.jpg" ,
+"https://i.postimg.cc/59hZHvQ8/J197.jpg" ,
+"https://i.postimg.cc/xCqWm3P3/J196.jpg" ,
+"https://i.postimg.cc/Dwqp4M3T/J195.jpg" ,
+"https://i.postimg.cc/t40mTHfk/J194.jpg" ,
+"https://i.postimg.cc/W39HbqLq/J193.jpg" ,
+"https://i.postimg.cc/5NDDCzHw/J192.jpg" ,
+"https://i.postimg.cc/hjrq8GFK/J191.jpg" ,
+"https://i.postimg.cc/q72rRLjh/J190.jpg" ,
+"https://i.postimg.cc/yYrsrWDd/J189.jpg" ,
+"https://i.postimg.cc/132R44ST/J188.jpg" ,
+"https://i.postimg.cc/9F1rXWr5/J187.jpg" ,
+"https://i.postimg.cc/d0g7M4Dh/J186.jpg" ,
+"https://i.postimg.cc/9fD4NvX3/J185.jpg" ,
+"https://i.postimg.cc/g2NR7Vvh/J184.jpg" ,
+"https://i.postimg.cc/65CfM4jV/J183.jpg" ,
+"https://i.postimg.cc/9fmbRXBd/J182.jpg" ,
+"https://i.postimg.cc/BnGM3BLw/J181.jpg" ,
+"https://i.postimg.cc/C1tdCdCW/J180.jpg" ,
+"https://i.postimg.cc/N0DHXgzc/J179.jpg" ,
+"https://i.postimg.cc/MHNRGdrf/J178.jpg" ,
+"https://i.postimg.cc/8Cmhbdsx/J177.jpg" ,
+"https://i.postimg.cc/prTYr9W4/J176.jpg" ,
+"https://i.postimg.cc/sXzTjDZC/J175.jpg" ,
+"https://i.postimg.cc/m2ppYsK7/J174.jpg" ,
+"https://i.postimg.cc/L5HQT6H3/J173.jpg" ,
+"https://i.postimg.cc/t47fwTFr/J172.jpg" ,
+"https://i.postimg.cc/Dy5kRHHz/J171.jpg" ,
+"https://i.postimg.cc/FzV5rBKD/J170.jpg" ,
+"https://i.postimg.cc/43jTBcMb/J169.jpg" ,
+"https://i.postimg.cc/jqPR38RW/J168.jpg" ,
+"https://i.postimg.cc/8CXCDsYj/J167.jpg" ,
+"https://i.postimg.cc/Jhzh9jPf/J166.jpg" ,
+"https://i.postimg.cc/Y25hhGCF/J165.jpg" ,
+"https://i.postimg.cc/8zBDks7T/J164.jpg" ,
+"https://i.postimg.cc/QdpNB0yG/J163.jpg" ,
+"https://i.postimg.cc/BnWQQdNB/J162.jpg" ,
+"https://i.postimg.cc/5y6N6JZn/J161.jpg" ,
+"https://i.postimg.cc/1zrzdJGc/J160.jpg" ,
+"https://i.postimg.cc/nrRjP0tw/J159.jpg" ,
+"https://i.postimg.cc/QCxKmvvT/J158.jpg" ,
+"https://i.postimg.cc/c4kw94x4/J157.jpg" ,
+"https://i.postimg.cc/hvrbPLR9/J156.jpg" ,
+"https://i.postimg.cc/ZR6xXkfs/J155.jpg" ,
+"https://i.postimg.cc/s2kJnfJZ/J154.jpg" ,
+"https://i.postimg.cc/2S5TyK63/J153.jpg" ,
+"https://i.postimg.cc/8C538CWK/J152.jpg" ,
+"https://i.postimg.cc/SsYvstgc/J151.jpg" ,
+"https://i.postimg.cc/0jgHJd4F/J150.jpg" ,
+"https://i.postimg.cc/mgTJwjrG/J149.jpg" ,
+"https://i.postimg.cc/Hxn6Nvqf/J148.jpg" ,
+"https://i.postimg.cc/ZqT785VY/J147.jpg" ,
+"https://i.postimg.cc/wTmGHP1z/J146.jpg" ,
+"https://i.postimg.cc/MZ4FCxKt/J145.jpg" ,
+"https://i.postimg.cc/RhFxXTdF/J144.jpg" ,
+"https://i.postimg.cc/NMbw6n1S/J143.jpg" ,
+"https://i.postimg.cc/SNnp9Dj1/J142.jpg" ,
+"https://i.postimg.cc/XqzShy1g/J141.jpg" ,
+"https://i.postimg.cc/wvc9WVN8/H202.jpg" ,
+"https://i.postimg.cc/TYk3MC4T/H201.jpg" ,
+"https://i.postimg.cc/Jnbzf89F/H200.jpg" ,
+"https://i.postimg.cc/FRcYh3JD/H199.jpg" ,
+"https://i.postimg.cc/L6VZqtQW/H198.jpg" ,
+"https://i.postimg.cc/sgV7K6Zy/H197.jpg" ,
+"https://i.postimg.cc/tRx3gVj0/H196.jpg" ,
+"https://i.postimg.cc/yd5ybmCj/H195.jpg" ,
+"https://i.postimg.cc/3wtBgMLP/H194.jpg" ,
+"https://i.postimg.cc/L515xRNh/H193.jpg" ,
+"https://i.postimg.cc/zfxyBxyD/H192.jpg" ,
+"https://i.postimg.cc/QxK1zZHQ/H191.jpg" ,
+"https://i.postimg.cc/prpzxgkt/H190.jpg" ,
+"https://i.postimg.cc/zBDT2Lgv/H189.jpg" ,
+"https://i.postimg.cc/BvTCV97Y/H188.jpg" ,
+"https://i.postimg.cc/jqXFjNXg/H187.jpg" ,
+"https://i.postimg.cc/sgB6KLRq/H186.jpg" ,
+"https://i.postimg.cc/Jn3dZBWh/H185.jpg" ,
+"https://i.postimg.cc/dt5p5dZk/H184.jpg" ,
+"https://i.postimg.cc/cHYGjHGq/H183.jpg" ,
+"https://i.postimg.cc/pdmHfC0L/H182.jpg" ,
+"https://i.postimg.cc/BQ34rxvm/H181.jpg" ,
+"https://i.postimg.cc/Y0KMqFzq/H180.jpg" ,
+"https://i.postimg.cc/hPVhxDX5/H179.jpg" ,
+"https://i.postimg.cc/BbK9rvW9/H178.jpg" ,
+"https://i.postimg.cc/k5Tm8ZNZ/H177.jpg" ,
+"https://i.postimg.cc/6QWK8wZn/H176.jpg" ,
+"https://i.postimg.cc/3xpNXKWq/H175.jpg" ,
+"https://i.postimg.cc/fTVJb7sD/H174.jpg" ,
+"https://i.postimg.cc/28g3Lqjv/H173.jpg" ,
+"https://i.postimg.cc/nVRXZR63/H172.jpg" ,
+"https://i.postimg.cc/PJ2Ykd1y/H171.jpg" ,
+"https://i.postimg.cc/NFgmVK2L/H170.jpg" ,
+"https://i.postimg.cc/9MPyJdMv/H169.jpg" ,
+"https://i.postimg.cc/XvG8cB9b/H168.jpg" ,
+"https://i.postimg.cc/7hMXJv0J/H167.jpg" ,
+"https://i.postimg.cc/8khZ0v9k/H166.jpg" ,
+"https://i.postimg.cc/W19W7PKM/H165.jpg" ,
+"https://i.postimg.cc/vZXjSn1x/H164.jpg" ,
+"https://i.postimg.cc/tJPwrmP9/H163.jpg" ,
+"https://i.postimg.cc/VsbxL5h2/H162.jpg" ,
+"https://i.postimg.cc/7PGkGK5s/H161.jpg" ,
+"https://i.postimg.cc/kgPh5cSb/H160.jpg" ,
+"https://i.postimg.cc/4xpqvMGP/H159.jpg" ,
+"https://i.postimg.cc/SRXtn1VW/H158.jpg" ,
+"https://i.postimg.cc/nr5gTfMR/H157.jpg" ,
+"https://i.postimg.cc/SNRmrm1r/H156.jpg" ,
+"https://i.postimg.cc/HLwmxnjp/H155.jpg" ,
+"https://i.postimg.cc/pXcLbm54/H154.jpg" ,
+"https://i.postimg.cc/3NSYTqNm/H153.jpg" ,
+"https://i.postimg.cc/xdzCP9C7/H152.jpg" ,
+"https://i.postimg.cc/mghhtYGT/H151.jpg" ,
+"https://i.postimg.cc/y6XD56PC/H150.jpg" ,
+"https://i.postimg.cc/m2LPGxXz/H149.jpg" ,
+"https://i.postimg.cc/3xLpqr3x/H148.jpg" ,
+"https://i.postimg.cc/dQd20Kj5/H147.jpg" ,
+"https://i.postimg.cc/GhxvkJNY/H146.jpg" ,
+"https://i.postimg.cc/T32gQ5Ms/H145.jpg" ,
+"https://i.postimg.cc/YCx8Cwk5/H144.jpg" ,
+"https://i.postimg.cc/hPTpNdYP/H143.jpg" ,
+"https://i.postimg.cc/G3ZXMQq5/H142.jpg" ,
+"https://i.postimg.cc/P5H2HqGb/H141.jpg" ,
+"https://i.postimg.cc/Jzmcv7vf/G232.jpg" ,
+"https://i.postimg.cc/JtCngg2x/G231.jpg" ,
+"https://i.postimg.cc/y8Xgq1BZ/G230.jpg" ,
+"https://i.postimg.cc/NF39tL51/G229.jpg" ,
+"https://i.postimg.cc/ZRqyF1Gy/G228.jpg" ,
+"https://i.postimg.cc/ydfcMVmP/G227.jpg" ,
+"https://i.postimg.cc/wx0wzzqn/G226.jpg" ,
+"https://i.postimg.cc/bNr3N5dr/G225.jpg" ,
+"https://i.postimg.cc/5yNpz73P/G224.jpg" ,
+"https://i.postimg.cc/wM0fb8M8/G223.jpg" ,
+"https://i.postimg.cc/ZR6XHM64/G222.jpg" ,
+"https://i.postimg.cc/VkVykMYQ/G221.jpg" ,
+"https://i.postimg.cc/4yZqSQ1t/G220.jpg" ,
+"https://i.postimg.cc/HsT1ZdSK/G219.jpg" ,
+"https://i.postimg.cc/kXNXGTZr/G218.jpg" ,
+"https://i.postimg.cc/gkb2GCgq/G217.jpg" ,
+"https://i.postimg.cc/KcMYSGD8/G216.jpg" ,
+"https://i.postimg.cc/bJKNDWpP/G215.jpg" ,
+"https://i.postimg.cc/sfq3wkFC/G214.jpg" ,
+"https://i.postimg.cc/Y0GMt3WP/G213.jpg" ,
+"https://i.postimg.cc/W3fsRKhr/G212.jpg" ,
+"https://i.postimg.cc/KYxGtB6K/G211.jpg" ,
+"https://i.postimg.cc/Sxz2g61D/G210.jpg" ,
+"https://i.postimg.cc/rFHRGnjD/G209.jpg" ,
+"https://i.postimg.cc/hGLJBSBm/G208.jpg" ,
+"https://i.postimg.cc/Yq0mWK6c/G207.jpg" ,
+"https://i.postimg.cc/vHYt2N5X/G206.jpg" ,
+"https://i.postimg.cc/xT6yw3RQ/G205.jpg" ,
+"https://i.postimg.cc/3N7FTLV8/G204.jpg" ,
+"https://i.postimg.cc/vZShVtgh/G203.jpg" ,
+"https://i.postimg.cc/rFNYK4NZ/G202.jpg" ,
+"https://i.postimg.cc/qMT5JwyC/G201.jpg" ,
+"https://i.postimg.cc/7P7RrdGk/G200.jpg" ,
+"https://i.postimg.cc/43S0XTQJ/G199.jpg" ,
+"https://i.postimg.cc/XY8SShPJ/G198.jpg" ,
+"https://i.postimg.cc/m27WVhN7/G197.jpg" ,
+"https://i.postimg.cc/V5Q4dfJ8/G196.jpg" ,
+"https://i.postimg.cc/TwstvqGh/G195.jpg" ,
+"https://i.postimg.cc/nVwynBT4/G194.jpg" ,
+"https://i.postimg.cc/FRrMHx2Z/G193.jpg" ,
+"https://i.postimg.cc/nLG8xWwr/G192.jpg" ,
+"https://i.postimg.cc/XNHbXTNy/G191.jpg" ,
+"https://i.postimg.cc/mD4bNMKz/G190.jpg" ,
+"https://i.postimg.cc/4xr4yj51/G189.jpg" ,
+"https://i.postimg.cc/tR5gkSqX/G188.jpg" ,
+"https://i.postimg.cc/VvYk1MRQ/G187.jpg" ,
+"https://i.postimg.cc/ZYrNSxJg/G186.jpg" ,
+"https://i.postimg.cc/8PN6Pf5C/G185.jpg" ,
+"https://i.postimg.cc/zv1RhVF0/G184.jpg" ,
+"https://i.postimg.cc/CKBZ6jvc/G183.jpg" ,
+"https://i.postimg.cc/bwqHMFb3/G182.jpg" ,
+"https://i.postimg.cc/W1S6P6wj/G181.jpg" ,
+"https://i.postimg.cc/xjbRbmny/G180.jpg" ,
+"https://i.postimg.cc/SR8f0BDt/G179.jpg" ,
+"https://i.postimg.cc/NjvRXCpQ/G178.jpg" ,
+"https://i.postimg.cc/HsyQV10S/G177.jpg" ,
+"https://i.postimg.cc/c1jRxL3g/G176.jpg" ,
+"https://i.postimg.cc/GtZGqXRJ/G175.jpg" ,
+"https://i.postimg.cc/tgtk7Gb0/G174.jpg" ,
+"https://i.postimg.cc/KzGNMpc1/G173.jpg" ,
+"https://i.postimg.cc/9Q9J5qNQ/G172.jpg" ,
+"https://i.postimg.cc/YSw8pqJf/G171.jpg" ,
+"https://i.postimg.cc/zB31kj0f/F200.jpg" ,
+"https://i.postimg.cc/kXSqZT96/F199.jpg" ,
+"https://i.postimg.cc/85CT0DPN/F198.jpg" ,
+"https://i.postimg.cc/Y9XCr0yv/F197.jpg" ,
+"https://i.postimg.cc/1XjXHXpk/F196.jpg" ,
+"https://i.postimg.cc/0QZbzcr2/F195.jpg" ,
+"https://i.postimg.cc/9XJ70Fqt/F194.jpg" ,
+"https://i.postimg.cc/QxdcJWry/F193.jpg" ,
+"https://i.postimg.cc/zGLW9Zvw/F192.jpg" ,
+"https://i.postimg.cc/HkK0xWRP/F191.jpg" ,
+"https://i.postimg.cc/mZNSws1t/F190.jpg" ,
+"https://i.postimg.cc/RVdXMBvj/F189.jpg" ,
+"https://i.postimg.cc/MKq92TJ7/F188.jpg" ,
+"https://i.postimg.cc/7LdKpnqh/F187.jpg" ,
+"https://i.postimg.cc/MHy30f2T/F186.jpg" ,
+"https://i.postimg.cc/CLG9kXSN/F185.jpg" ,
+"https://i.postimg.cc/m2f0cBfk/F184.jpg" ,
+"https://i.postimg.cc/85xxmV7y/F183.jpg" ,
+"https://i.postimg.cc/jqprzyNs/F182.jpg" ,
+"https://i.postimg.cc/W4jK5nbv/F181.jpg" ,
+"https://i.postimg.cc/V6kh8kCZ/F180.jpg" ,
+"https://i.postimg.cc/wTySMMbS/F179.jpg" ,
+"https://i.postimg.cc/PxSBpwHk/F176.jpg" ,
+"https://i.postimg.cc/x1bYwt2N/F175.jpg" ,
+"https://i.postimg.cc/6QJwtnWj/F174.jpg" ,
+"https://i.postimg.cc/mk2BK4LT/F173.jpg" ,
+"https://i.postimg.cc/CLxxQG5b/F172.jpg" ,
+"https://i.postimg.cc/VkTvMJYn/F171.jpg" ,
+"https://i.postimg.cc/X7spj2m2/F170.jpg" ,
+"https://i.postimg.cc/Y03jm89C/F169.jpg" ,
+"https://i.postimg.cc/RVdn3C6L/F168.jpg" ,
+"https://i.postimg.cc/0Nbm1gNd/F167.jpg" ,
+"https://i.postimg.cc/L6pzY0y2/F166.jpg" ,
+"https://i.postimg.cc/D0V1cCnQ/F165.jpg" ,
+"https://i.postimg.cc/Fs5xbKKt/F164.jpg" ,
+"https://i.postimg.cc/G24jK8YR/F163.jpg" ,
+"https://i.postimg.cc/tR1rtft6/F162.jpg" ,
+"https://i.postimg.cc/JtVHbt3p/F161.jpg" ,
+"https://i.postimg.cc/t4dWNdMW/F160.jpg" ,
+"https://i.postimg.cc/76tgTxQR/F159.jpg" ,
+"https://i.postimg.cc/6QwVkbvM/F158.jpg" ,
+"https://i.postimg.cc/vZ5LSwc1/F157.jpg" ,
+"https://i.postimg.cc/L40TJVcs/F156.jpg" ,
+"https://i.postimg.cc/dQWW8Fyw/F155.jpg" ,
+"https://i.postimg.cc/XJLs1S1K/F154.jpg" ,
+"https://i.postimg.cc/VNjGMbjV/F153.jpg" ,
+"https://i.postimg.cc/D0fM7y4Y/F152.jpg" ,
+"https://i.postimg.cc/qMb9MnLc/F151.jpg" ,
+"https://i.postimg.cc/zXXsrpnX/F150.jpg" ,
+"https://i.postimg.cc/kGwLStdm/F149.jpg" ,
+"https://i.postimg.cc/MT1SnTT6/F148.jpg" ,
+"https://i.postimg.cc/s2QyRKCZ/F147.jpg" ,
+"https://i.postimg.cc/T2qxGpFQ/F146.jpg" ,
+"https://i.postimg.cc/Gtr1GC8k/F145.jpg" ,
+"https://i.postimg.cc/ryWm4Vbt/F144.jpg" ,
+"https://i.postimg.cc/MKSGmk23/F143.jpg" ,
+"https://i.postimg.cc/J0wzFvyn/F142.jpg" ,
+"https://i.postimg.cc/8chzg4Wb/F141.jpg" ,
+"https://i.postimg.cc/jS63n76k/E194.jpg" ,
+"https://i.postimg.cc/q7jmjH5s/E193.jpg" ,
+"https://i.postimg.cc/fLqrTQ7z/E192.jpg" ,
+"https://i.postimg.cc/hGrY6df7/E191.jpg" ,
+"https://i.postimg.cc/BQRfBHKS/E190.jpg" ,
+"https://i.postimg.cc/136hCXGp/E189.jpg" ,
+"https://i.postimg.cc/h4pSTXsv/E188.jpg" ,
+"https://i.postimg.cc/63BXGKGC/E187.jpg" ,
+"https://i.postimg.cc/MHdKGTPc/E186.jpg" ,
+"https://i.postimg.cc/RF1ZjGwL/E185.jpg" ,
+"https://i.postimg.cc/LXFsCGgs/E184.jpg" ,
+"https://i.postimg.cc/KjFRzCmW/E183.jpg" ,
+"https://i.postimg.cc/VkHrR7FS/E182.jpg" ,
+"https://i.postimg.cc/vmknQPgR/E181.jpg" ,
+"https://i.postimg.cc/JnXktbZs/E180.jpg" ,
+"https://i.postimg.cc/0QKpDgR2/E179.jpg" ,
+"https://i.postimg.cc/vmNr4YKN/E178.jpg" ,
+"https://i.postimg.cc/bvNgGFws/E177.jpg" ,
+"https://i.postimg.cc/jjgXyQDv/E176.jpg" ,
+"https://i.postimg.cc/tJVVZF61/E175.jpg" ,
+"https://i.postimg.cc/qRF3v1NV/E174.jpg" ,
+"https://i.postimg.cc/Rh3w7jkZ/E173.jpg" ,
+"https://i.postimg.cc/j5SH5WvN/E172.jpg" ,
+"https://i.postimg.cc/fTGfKRTn/E171.jpg" ,
+"https://i.postimg.cc/yYgTcZKy/E170.jpg" ,
+"https://i.postimg.cc/NfSpzxDn/E169.jpg" ,
+"https://i.postimg.cc/d304zHgb/E168.jpg" ,
+"https://i.postimg.cc/fLDHvTCT/E167.jpg" ,
+"https://i.postimg.cc/XvM1pgy5/E166.jpg" ,
+"https://i.postimg.cc/C1g264h0/E165.jpg" ,
+"https://i.postimg.cc/BvDygzGN/E164.jpg" ,
+"https://i.postimg.cc/T2czFB54/E163.jpg" ,
+"https://i.postimg.cc/c4FNgPsn/E162.jpg" ,
+"https://i.postimg.cc/J0R9t5vx/E161.jpg" ,
+"https://i.postimg.cc/8znD399S/E160.jpg" ,
+"https://i.postimg.cc/Jhf87JRY/E159.jpg" ,
+"https://i.postimg.cc/Xqc4zJSH/E158.jpg" ,
+"https://i.postimg.cc/2SH8YVqg/E157.jpg" ,
+"https://i.postimg.cc/ydRV0jfz/E156.jpg" ,
+"https://i.postimg.cc/rwgzpfHn/E155.jpg" ,
+"https://i.postimg.cc/MTfGdqpN/E154.jpg" ,
+"https://i.postimg.cc/Y2m4xf40/E153.jpg" ,
+"https://i.postimg.cc/wBftwwcy/E152.jpg" ,
+"https://i.postimg.cc/0yvJjMyQ/E151.jpg" ,
+"https://i.postimg.cc/dDPwWyxT/E150.jpg" ,
+"https://i.postimg.cc/667ZmxP9/E149.jpg" ,
+"https://i.postimg.cc/5NCtwxRC/E148.jpg" ,
+"https://i.postimg.cc/d13sDvCD/E147.jpg" ,
+"https://i.postimg.cc/Vv3L3Tdv/E146.jpg" ,
+"https://i.postimg.cc/HnJkvHWF/E145.jpg" ,
+"https://i.postimg.cc/RFS3RjHz/E144.jpg" ,
+"https://i.postimg.cc/fbhS33Wy/E143.jpg" ,
+"https://i.postimg.cc/ydLDrvm3/E142.jpg" ,
+"https://i.postimg.cc/nLYjqHMk/E141.jpg" ,
+"https://i.postimg.cc/Bb1MSLQp/D208.jpg" ,
+"https://i.postimg.cc/1XL7w0Yb/D207.jpg" ,
+"https://i.postimg.cc/X7RtCWRX/D206.jpg" ,
+"https://i.postimg.cc/kGDLxgMR/D205.jpg" ,
+"https://i.postimg.cc/g0W9fps1/D204.jpg" ,
+"https://i.postimg.cc/yYGsp2wz/D203.jpg" ,
+"https://i.postimg.cc/FRxhPzQP/D202.jpg" ,
+"https://i.postimg.cc/q7yJ3QDH/D201.jpg" ,
+"https://i.postimg.cc/T3yYRTrw/D200.jpg" ,
+"https://i.postimg.cc/Px1CddnZ/D199.jpg" ,
+"https://i.postimg.cc/GpWB0HVd/D198.jpg" ,
+"https://i.postimg.cc/rsCRNMhc/D197.jpg" ,
+"https://i.postimg.cc/2S5LnpnR/D196.jpg" ,
+"https://i.postimg.cc/rsSxZSwB/D195.jpg" ,
+"https://i.postimg.cc/tC3NBH1s/D194.jpg" ,
+"https://i.postimg.cc/DzZQfJxG/D193.jpg" ,
+"https://i.postimg.cc/C19sQhHq/D192.jpg" ,
+"https://i.postimg.cc/NMFXt3fk/D191.jpg" ,
+"https://i.postimg.cc/TPCbZdGP/D190.jpg" ,
+"https://i.postimg.cc/bvzbCG7M/D189.jpg" ,
+"https://i.postimg.cc/Bvg54554/D188.jpg" ,
+"https://i.postimg.cc/wMPcn6XN/D187.jpg" ,
+"https://i.postimg.cc/xC6PyGqt/D186.jpg" ,
+"https://i.postimg.cc/T1hJkyDG/D185.jpg" ,
+"https://i.postimg.cc/qMz1wFsn/D184.jpg" ,
+"https://i.postimg.cc/sDXN8xrM/D183.jpg" ,
+"https://i.postimg.cc/ZnfDntrY/D182.jpg" ,
+"https://i.postimg.cc/RFLYrnhH/D181.jpg" ,
+"https://i.postimg.cc/9X1kJTv3/D180.jpg" ,
+"https://i.postimg.cc/XvCMPJ9f/D179.jpg" ,
+"https://i.postimg.cc/tCqjg9Hb/D178.jpg" ,
+"https://i.postimg.cc/cLjyTYt1/D177.jpg" ,
+"https://i.postimg.cc/bwdfQLJF/D176.jpg" ,
+"https://i.postimg.cc/Y21r9XG6/D175.jpg" ,
+"https://i.postimg.cc/L6DmknVh/D174.jpg" ,
+"https://i.postimg.cc/6Qy6ptnq/D173.jpg" ,
+"https://i.postimg.cc/0jq9nS3K/D172.jpg" ,
+"https://i.postimg.cc/wBvMRh86/D171.jpg" ,
+"https://i.postimg.cc/L5fn62dL/D170.jpg" ,
+"https://i.postimg.cc/ZKtWsB3c/D169.jpg" ,
+"https://i.postimg.cc/ydDDt0vf/D168.jpg" ,
+"https://i.postimg.cc/SxGYMSnG/D167.jpg" ,
+"https://i.postimg.cc/rstqCJQk/D166.jpg" ,
+"https://i.postimg.cc/mDnbHq3j/D165.jpg" ,
+"https://i.postimg.cc/1z95hD5G/D164.jpg" ,
+"https://i.postimg.cc/3xjJct7r/D163.jpg" ,
+"https://i.postimg.cc/PxVqMNHm/D162.jpg" ,
+"https://i.postimg.cc/C1x1Dk3h/D161.jpg" ,
+"https://i.postimg.cc/44FK624r/D160.jpg" ,
+"https://i.postimg.cc/WzKhszf2/D159.jpg" ,
+"https://i.postimg.cc/5N6CDdk4/D158.jpg" ,
+"https://i.postimg.cc/vZn6H7sC/D157.jpg" ,
+"https://i.postimg.cc/YScY1nRp/D156.jpg" ,
+"https://i.postimg.cc/15tGPN4Z/D155.jpg" ,
+"https://i.postimg.cc/FFGy2xrZ/D154.jpg" ,
+"https://i.postimg.cc/J0TjZR6g/D153.jpg" ,
+"https://i.postimg.cc/kGwvsQ4T/D152.jpg" ,
+"https://i.postimg.cc/vBrzgFdF/D151.jpg" ,
+"https://i.postimg.cc/3N3Z2SKy/D150.jpg" ,
+"https://i.postimg.cc/bwZ902jR/D149.jpg" ,
+"https://i.postimg.cc/RhmgXCTZ/D148.jpg" ,
+"https://i.postimg.cc/zvk0MmdS/D147.jpg" ,
+"https://i.postimg.cc/HLJvLhxd/D146.jpg" ,
+"https://i.postimg.cc/fb62SftX/D145.jpg" ,
+"https://i.postimg.cc/g2g1jhHq/D144.jpg" ,
+"https://i.postimg.cc/Kvr6XwKW/D143.jpg" ,
+"https://i.postimg.cc/wjqS92Lj/D142.jpg" ,
+"https://i.postimg.cc/CLV3QSKD/D141.jpg" ,
+"https://i.postimg.cc/KjsJF72R/C202.jpg" ,
+"https://i.postimg.cc/vZxSYKDM/C201.jpg" ,
+"https://i.postimg.cc/VLVVcwfD/C200.jpg" ,
+"https://i.postimg.cc/4xjqpgjm/C199.jpg" ,
+"https://i.postimg.cc/LXFdFpVr/C198.jpg" ,
+"https://i.postimg.cc/9QDs4M86/C197.jpg" ,
+"https://i.postimg.cc/9Md6Wn8z/C196.jpg" ,
+"https://i.postimg.cc/90pHBnZs/C195.jpg" ,
+"https://i.postimg.cc/QdMhfh6m/C194.jpg" ,
+"https://i.postimg.cc/9FCWqGZv/C193.jpg" ,
+"https://i.postimg.cc/tgwq1wN5/C192.jpg" ,
+"https://i.postimg.cc/PrQ566dX/C191.jpg" ,
+"https://i.postimg.cc/LsbXtn2j/C190.jpg" ,
+"https://i.postimg.cc/K8mRF603/C189.jpg" ,
+"https://i.postimg.cc/Nf653skw/C188.jpg" ,
+"https://i.postimg.cc/jjdw6pNY/C187.jpg" ,
+"https://i.postimg.cc/B6Rj0tzJ/C186.jpg" ,
+"https://i.postimg.cc/8PM6TBD9/C185.jpg" ,
+"https://i.postimg.cc/pVgjN1NK/C184.jpg" ,
+"https://i.postimg.cc/ZqVYT0C1/C183.jpg" ,
+"https://i.postimg.cc/2SNSGPsX/C182.jpg" ,
+"https://i.postimg.cc/VsT6rSDw/C181.jpg" ,
+"https://i.postimg.cc/QMsV8RSW/C180.jpg" ,
+"https://i.postimg.cc/PrgPcLwy/C179.jpg" ,
+"https://i.postimg.cc/hPzXp8fh/C178.jpg" ,
+"https://i.postimg.cc/gjrx98sS/C177.jpg" ,
+"https://i.postimg.cc/cH03zvP2/C176.jpg" ,
+"https://i.postimg.cc/Z5v6vtr7/C175.jpg" ,
+"https://i.postimg.cc/R0cfG7pw/C174.jpg" ,
+"https://i.postimg.cc/sDNp2DZG/C173.jpg" ,
+"https://i.postimg.cc/7L71d8hG/C172.jpg" ,
+"https://i.postimg.cc/5N7mFSD0/C171.jpg" ,
+"https://i.postimg.cc/Wp78svn0/C170.jpg" ,
+"https://i.postimg.cc/7YYV6Wsd/C169.jpg" ,
+"https://i.postimg.cc/JnZTNHZF/C168.jpg" ,
+"https://i.postimg.cc/gkNgHWLG/C167.jpg" ,
+"https://i.postimg.cc/fW72kXwt/C166.jpg" ,
+"https://i.postimg.cc/zXJdhBBd/C165.jpg" ,
+"https://i.postimg.cc/8kL3W9bC/C164.jpg" ,
+"https://i.postimg.cc/C5CQgnK8/C163.jpg" ,
+"https://i.postimg.cc/4d90WSkB/C162.jpg" ,
+"https://i.postimg.cc/zf36gfdm/C161.jpg" ,
+"https://i.postimg.cc/4xXTmskZ/C160.jpg" ,
+"https://i.postimg.cc/28QDk3t2/C159.jpg" ,
+"https://i.postimg.cc/dtPFcG5h/C158.jpg" ,
+"https://i.postimg.cc/d0HFbXfF/C157.jpg" ,
+"https://i.postimg.cc/XNTjNRY7/C156.jpg" ,
+"https://i.postimg.cc/ZY9YSbZM/C155.jpg" ,
+"https://i.postimg.cc/G9050Jrd/C154.jpg" ,
+"https://i.postimg.cc/hGKNPrmG/C153.jpg" ,
+"https://i.postimg.cc/tJ8LqGd0/C152.jpg" ,
+"https://i.postimg.cc/kG20PgbF/C151.jpg" ,
+"https://i.postimg.cc/26cstZVS/C150.jpg" ,
+"https://i.postimg.cc/9fp5GS2T/C149.jpg" ,
+"https://i.postimg.cc/ZRwmhQDZ/C148.jpg" ,
+"https://i.postimg.cc/jjQKM2HD/C147.jpg" ,
+"https://i.postimg.cc/25frdhZp/C146.jpg" ,
+"https://i.postimg.cc/gcMc9xfR/C145.jpg" ,
+"https://i.postimg.cc/cLtLBdk3/C144.jpg" ,
+"https://i.postimg.cc/c4bJ3vhZ/C143.jpg" ,
+"https://i.postimg.cc/25p8HggK/C142.jpg" ,
+"https://i.postimg.cc/RhC07f2C/C141.jpg" ,
+"https://i.postimg.cc/J7TXT4xY/B-14.jpg" ,
+"https://i.postimg.cc/VNRvdDHZ/B198.jpg" ,
+"https://i.postimg.cc/8zLjV1dS/B197.jpg" ,
+"https://i.postimg.cc/MKNQSPhy/B196.jpg" ,
+"https://i.postimg.cc/NFPrLpLv/B195.jpg" ,
+"https://i.postimg.cc/4y39Jrf1/B194.jpg" ,
+"https://i.postimg.cc/rmj428km/B193.jpg" ,
+"https://i.postimg.cc/BbZxjjgH/B192.jpg" ,
+"https://i.postimg.cc/3RFXrXg3/B191.jpg" ,
+"https://i.postimg.cc/Qt3gr4K6/B190.jpg" ,
+"https://i.postimg.cc/vZCL0HYw/B189.jpg" ,
+"https://i.postimg.cc/0QRny5F0/B188.jpg" ,
+"https://i.postimg.cc/7LTX4JsL/B187.jpg" ,
+"https://i.postimg.cc/4x0wjQ1M/B186.jpg" ,
+"https://i.postimg.cc/YC0bXsQY/B185.jpg" ,
+"https://i.postimg.cc/137YsQyv/B184.jpg" ,
+"https://i.postimg.cc/650mbZgJ/B183.jpg" ,
+"https://i.postimg.cc/xTYZP5s3/B182.jpg" ,
+"https://i.postimg.cc/vTwNktGM/B181.jpg" ,
+"https://i.postimg.cc/PJ1B5FSP/B180.jpg" ,
+"https://i.postimg.cc/V6rx3NM9/B179.jpg" ,
+"https://i.postimg.cc/W1ScZCTZ/B178.jpg" ,
+"https://i.postimg.cc/dQTFf5jM/B177.jpg" ,
+"https://i.postimg.cc/FRw4RSmn/B176.jpg" ,
+"https://i.postimg.cc/kgyqcDFB/B175.jpg" ,
+"https://i.postimg.cc/Qx1XFfFg/B174.jpg" ,
+"https://i.postimg.cc/QCKynY2f/B173.jpg" ,
+"https://i.postimg.cc/fb5p397f/B172.jpg" ,
+"https://i.postimg.cc/xTbwsqY9/B171.jpg" ,
+"https://i.postimg.cc/ZYgkFpGf/B170.jpg" ,
+"https://i.postimg.cc/xC1rgRjZ/B169.jpg" ,
+"https://i.postimg.cc/ZqZzvmG4/B168.jpg" ,
+"https://i.postimg.cc/5yjV9mZz/B167.jpg" ,
+"https://i.postimg.cc/D0DKSXTM/B166.jpg" ,
+"https://i.postimg.cc/cHxW2WhX/B165.jpg" ,
+"https://i.postimg.cc/qMSkR9Bv/B164.jpg" ,
+"https://i.postimg.cc/PxyX5JJg/B163.jpg" ,
+"https://i.postimg.cc/nzpVxBFK/B162.jpg" ,
+"https://i.postimg.cc/1zpRbJQ5/B161.jpg" ,
+"https://i.postimg.cc/2jTyzcB1/B160.jpg" ,
+"https://i.postimg.cc/Cx9d3RnJ/B159.jpg" ,
+"https://i.postimg.cc/PqZNTdmH/B158.jpg" ,
+"https://i.postimg.cc/dVhLN23L/B157.jpg" ,
+"https://i.postimg.cc/pXX9zbtQ/B156.jpg" ,
+"https://i.postimg.cc/0yjwRgW5/B155.jpg" ,
+"https://i.postimg.cc/Z5QyJf28/B154.jpg" ,
+"https://i.postimg.cc/Vs9MXW0w/B153.jpg" ,
+"https://i.postimg.cc/Dwp18fJb/B152.jpg" ,
+"https://i.postimg.cc/hPrLR1Ks/B151.jpg" ,
+"https://i.postimg.cc/HsHwNh1j/B150.jpg" ,
+"https://i.postimg.cc/6qVd3dn9/B149.jpg" ,
+"https://i.postimg.cc/K8G51s0C/B148.jpg" ,
+"https://i.postimg.cc/vHLzHdtW/B147.jpg" ,
+"https://i.postimg.cc/5tG5k9fM/B146.jpg" ,
+"https://i.postimg.cc/9M7P33fw/B145.jpg" ,
+"https://i.postimg.cc/j5pXCx1h/B144.jpg" ,
+"https://i.postimg.cc/hG3MWbb6/B143.jpg" ,
+"https://i.postimg.cc/Y9GRpGd9/B142.jpg" ,
+"https://i.postimg.cc/nh20TtsH/B141.jpg" ,
+"https://i.postimg.cc/2SSXs6Nq/A-15.jpg" ,
+"https://i.postimg.cc/SK557p5n/A-14.jpg" ,
+"https://i.postimg.cc/jqNVcLRt/A201.jpg" ,
+"https://i.postimg.cc/HxqqHC4q/A200.jpg" ,
+"https://i.postimg.cc/PqRG3DLr/A199.jpg" ,
+"https://i.postimg.cc/Gp2wxKm5/A198.jpg" ,
+"https://i.postimg.cc/XJrW4LMC/A197.jpg" ,
+"https://i.postimg.cc/qqndC7vB/A196.jpg" ,
+"https://i.postimg.cc/pdXx1xqk/A195.jpg" ,
+"https://i.postimg.cc/y8K7c0RM/A194.jpg" ,
+"https://i.postimg.cc/RFDYdxD3/A193.jpg" ,
+"https://i.postimg.cc/V66TXkDQ/A192.jpg" ,
+"https://i.postimg.cc/K8Pd2VRV/A191.jpg" ,
+"https://i.postimg.cc/x1DWBYTM/A190.jpg" ,
+"https://i.postimg.cc/jdpbKPvW/A189.jpg" ,
+"https://i.postimg.cc/3x2HwNbt/A188.jpg" ,
+"https://i.postimg.cc/661KjDvf/A187.jpg" ,
+"https://i.postimg.cc/dtkYz4RP/A186.jpg" ,
+"https://i.postimg.cc/Qd7jW0Vk/A185.jpg" ,
+"https://i.postimg.cc/PrPXdtj7/A184.jpg" ,
+"https://i.postimg.cc/Wzfs0yMS/A183.jpg" ,
+"https://i.postimg.cc/4y3J7Ghm/A182.jpg" ,
+"https://i.postimg.cc/TYwwhVrC/A181.jpg" ,
+"https://i.postimg.cc/Kj98JjyP/A180.jpg" ,
+"https://i.postimg.cc/PxQxvK3F/A179.jpg" ,
+"https://i.postimg.cc/pTHrd3ZF/A178.jpg" ,
+"https://i.postimg.cc/mZSzPZK2/A177.jpg" ,
+"https://i.postimg.cc/QCSHwScW/A176.jpg" ,
+"https://i.postimg.cc/gkSxKSYC/A175.jpg" ,
+"https://i.postimg.cc/J4Pk27Qd/A174.jpg" ,
+"https://i.postimg.cc/xdkMHrMp/A173.jpg" ,
+"https://i.postimg.cc/s2tS4nJj/A172.jpg" ,
+"https://i.postimg.cc/xjLGtS7W/A171.jpg" ,
+"https://i.postimg.cc/0yypkKQs/A170.jpg" ,
+"https://i.postimg.cc/1X1GsWgC/A169.jpg" ,
+"https://i.postimg.cc/W4t6nqLn/A168.jpg" ,
+"https://i.postimg.cc/GmXxGJNt/A167.jpg" ,
+"https://i.postimg.cc/RVzdB0KS/A166.jpg" ,
+"https://i.postimg.cc/sfWmqWBH/A165.jpg" ,
+"https://i.postimg.cc/fyYvd4nQ/A164.jpg" ,
+"https://i.postimg.cc/PqqKRFZ1/A163.jpg" ,
+"https://i.postimg.cc/kgqTx5g1/A162.jpg" ,
+"https://i.postimg.cc/wThWyNgR/A161.jpg" ,
+"https://i.postimg.cc/v8x2yjKz/A160.jpg" ,
+"https://i.postimg.cc/C1zPz6xw/A159.jpg" ,
+"https://i.postimg.cc/d3C59kCX/A158.jpg" ,
+"https://i.postimg.cc/ZR2f3FWp/A157.jpg" ,
+"https://i.postimg.cc/CKM6VKyB/A156.jpg" ,
+"https://i.postimg.cc/Vk8VDRDF/A155.jpg" ,
+"https://i.postimg.cc/ZK3Q8gFR/A154.jpg" ,
+"https://i.postimg.cc/v8Cj6Mnk/A153.jpg" ,
+"https://i.postimg.cc/RCWyFqWw/A152.jpg" ,
+"https://i.postimg.cc/8cfRV2Pr/A151.jpg" ,
+"https://i.postimg.cc/Jn2NvrmL/A150.jpg" ,
+"https://i.postimg.cc/xCCG6kw5/A149.jpg" ,
+"https://i.postimg.cc/VkqFvP9q/A148.jpg" ,
+"https://i.postimg.cc/kg3c7gSM/A147.jpg" ,
+"https://i.postimg.cc/m2FjxHt6/A146.jpg" ,
+"https://i.postimg.cc/BZzpwgQK/A145.jpg" ,
+"https://i.postimg.cc/D0RcJ2Yg/A144.jpg" ,
+"https://i.postimg.cc/FRWpvbyw/A143.jpg" ,
+"https://i.postimg.cc/J0sqzyK0/A142.jpg" ,
+"https://i.postimg.cc/FRspwCLj/A141.jpg" ,
+];
+// ==============================================
+
+let currentIndex = 0;
+const gallery = document.getElementById('gallery');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+// 设置大图水印
+document.querySelectorAll('.lw').forEach(el => {
+  el.innerText = WATERMARK;
+  el.style.opacity = OPACITY_BIG;
+});
+
+// 渲染图片
+function init() {
+  imgUrls.forEach((url, i) => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    
+    const img = document.createElement('img');
+    img.dataset.src = url;
+    img.loading = 'lazy';
+    
+    // 紧凑水印
+    const wms = `
+      <div class="watermark-wrap">
+        <div class="wm" style="opacity:${OPACITY_SMALL}">${WATERMARK}</div>
+        <div class="wm" style="opacity:${OPACITY_SMALL}">${WATERMARK}</div>
+        <div class="wm" style="opacity:${OPACITY_SMALL}">${WATERMARK}</div>
+      </div>
+    `;
+    
+    item.innerHTML = wms;
+    item.prepend(img);
+    item.onclick = () => open(i);
+    gallery.appendChild(item);
+  });
+
+  // 懒加载
+  const imgs = document.querySelectorAll('img[data-src]');
+  const io = new IntersectionObserver(e => {
+    e.forEach(en => en.isIntersecting && (en.target.src = en.target.dataset.src));
+  }, { rootMargin: '200px' });
+  imgs.forEach(i => io.observe(i));
+}
+
+function open(idx) {
+  currentIndex = idx;
+  lightboxImg.src = imgUrls[idx];
+  lightbox.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function close() {
+  lightbox.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function prev() {
+  if (currentIndex > 0) lightboxImg.src = imgUrls[--currentIndex];
+}
+function next() {
+  if (currentIndex < imgUrls.length-1) lightboxImg.src = imgUrls[++currentIndex];
+}
+
+document.getElementById('closeBtn').onclick = close;
+document.getElementById('prevBtn').onclick = prev;
+document.getElementById('nextBtn').onclick = next;
+lightbox.onclick = e => e.target === lightbox && close();
+
+document.onkeydown = e => {
+  if (lightbox.style.display !== 'flex') return;
+  if (e.key === 'ArrowLeft') prev();
+  if (e.key === 'ArrowRight') next();
+  if (e.key === 'Escape') close();
+};
+
+init();
+</script>
+</body>
+</html>
