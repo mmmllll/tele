@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 关键：移动端自适应配置 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人导航首页</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background-color: #f5f7fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* 标题样式 */
+        .nav-title {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        /* 导航容器 - 核心响应式布局 */
+        .nav-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px 35px; /* 链接间距 上下/左右 */
+        }
+
+        /* 文字链接样式 */
+        .nav-link {
+            display: inline-block;
+            font-size: 1.1rem;
+            color: #34495e;
+            text-decoration: none;
+            padding: 12px 24px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+        }
+
+        /* 鼠标悬浮效果 */
+        .nav-link:hover {
+            color: #3498db;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        /* 底部备注 */
+        .footer {
+            margin-top: 60px;
+            color: #999;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* 手机端单独适配（屏幕小于 768px） */
+        @media (max-width: 768px) {
+            .nav-title {
+                font-size: 1.8rem;
+                margin-bottom: 30px;
+            }
+            .nav-link {
+                font-size: 1rem;
+                padding: 10px 20px;
+                width: 42%;
+                text-align: center;
+            }
+            .nav-container {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面标题 -->
+    <h1 class="nav-title">常用网站导航</h1>
+
+    <!-- 导航链接区域 【在这里修改你的链接和文字】 -->
+    <div class="nav-container">
+        <a href="https://www.baidu.com" class="nav-link">百度</a>
+        <a href="https://www.zhihu.com" class="nav-link">知乎</a>
+        <a href="https://www.weibo.com" class="nav-link">微博</a>
+        <a href="https://www.bilibili.com" class="nav-link">哔哩哔哩</a>
+        <a href="https://www.taobao.com" class="nav-link">淘宝</a>
+        <a href="https://www.jd.com" class="nav-link">京东</a>
+        <a href="https://www.163.com" class="nav-link">网易新闻</a>
+        <a href="https://www.csdn.net" class="nav-link">CSDN</a>
+        <a href="#" class="nav-link">自定义链接1</a>
+        <a href="#" class="nav-link">自定义链接2</a>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        个人导航首页 · 响应式适配
+    </div>
+</body>
+</html>
